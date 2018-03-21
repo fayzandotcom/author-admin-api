@@ -13,9 +13,27 @@ require __DIR__ . '/../vendor/autoload.php';
 
 session_start();
 
+// Set default timezone
+date_default_timezone_set('Asia/Kuala_Lumpur');
+
 // Instantiate the app
 $settings = require __DIR__ . '/../src/settings.php';
 $app = new \Slim\App($settings);
+
+$app->add(new \Slim\Middleware\JwtAuthentication([
+    "path" => ["/api"],
+    "passthrough" => ["/api/login", "/api/logout"],
+    "secret" => $settings['settings']['secret']
+]));
+
+function connect_db() {
+	$host ='localhost';
+	$username = 'root';
+	$password = 'root';
+	$name = 'author-admin-db';
+	$connection = new mysqli($host, $username, $password, $name);
+	return $connection;
+}
 
 // Set up dependencies
 require __DIR__ . '/../src/dependencies.php';
