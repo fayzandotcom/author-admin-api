@@ -22,7 +22,7 @@ $app = new \Slim\App($settings);
 
 $app->add(new \Slim\Middleware\JwtAuthentication([
     "path" => ["/api"],
-    "passthrough" => ["/api/login", "/api/logout"],
+    "passthrough" => ["/api/login", "/api/logout", "/api/public"],
     "secret" => $settings['settings']['secret']
 ]));
 
