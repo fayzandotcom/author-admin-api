@@ -40,6 +40,30 @@ $app->post("/api/login", function ($request, $response, $arguments) {
     }
 });
 
+// Change password
+$app->post("/api/change/password", function ($request, $response, $arguments) {
+    $username = $request->getParsedBodyParam('username', $default = null);
+    $oldPassword = $request->getParsedBodyParam('oldPassword', $default = null);
+    $newPassword = $request->getParsedBodyParam('newPassword', $default = null);
+    $this->logger->info("username[$username] Change password");
+    $connection = connect_db();
+    $result = $connection->query("SELECT * FROM user WHERE username='$username' AND password='$oldPassword'");
+    if ($result->num_rows > 0) {
+        // change password
+        $result2 = $connection->query("UPDATE user SET password='$newPassword', updated_date=now() WHERE username='$username'");
+        if ($result2 === TRUE) {
+            $this->logger->info("username[$username] Password changed successfully!");
+            return $response->withStatus(200);
+        } else {
+            $this->logger->error("username[$username] Fail to change password. Error[". json_encode($connection->error)."]");
+            return $response->withStatus(500);
+        }
+    } else {
+        $this->logger->info("username[$username] Password change verify fail");
+        return $response->withStatus(401);
+    }
+});
+
 // Get all verify attempts
 $app->get("/api/get/verify/attempts", function ($request, $response, $arguments) {
     $this->logger->info("get verify attempts start");
