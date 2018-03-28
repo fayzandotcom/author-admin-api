@@ -213,6 +213,62 @@ $app->get("/api/get/buyer/feedback/page", function ($request, $response, $argume
         ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
 });
 
+// Get system param by name
+$app->get("/api/get/system/param", function ($request, $response, $arguments) {
+    $name = $request->getQueryParam('name', $default = null);
+    $this->logger->info("get system param name[$name]");
+    $query = "SELECT * FROM system_param WHERE name='$name'";
+    $connection = connect_db();
+    $result = $connection->query($query) or die($this->logger->error("Fail to get system param. Error[". json_encode($connection->error)."]"));
+    if ($result->num_rows > 0) {
+        $payload = $result->fetch_assoc();
+        return $response->withStatus(200)
+            ->withHeader("Content-Type", "application/json")
+            ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+    } else {
+        return $response->withStatus(404);
+    }
+});
+
+// Get all system param
+$app->get("/api/get/all/system/param", function ($request, $response, $arguments) {
+    $this->logger->info("get all system param");
+    $query = "SELECT * FROM system_param";
+    $connection = connect_db();
+    $result = $connection->query($query) or die($this->logger->error("Fail to get system param. Error[". json_encode($connection->error)."]"));
+    $data = [];
+    $i = 0;
+    while($row = $result->fetch_assoc()) {
+        $data[$i++] = $row;
+    }
+    $payload["count"] = $result->num_rows;
+    $payload["data"] = $data;
+    return $response->withStatus(200)
+        ->withHeader("Content-Type", "application/json")
+        ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+});
+
+// Update system param
+$app->post("/api/update/system/param", function ($request, $response, $arguments) {
+    $name = $request->getParsedBodyParam('name', $default = null);
+    $value = $request->getParsedBodyParam('value', $default = null);
+    $this->logger->info("Update system param name[$name] value[$value]");
+    if ($name==null || $name=='') {
+        $this->logger->error("Invalid system param name[$name] to update!");
+        return $response->withStatus(500);
+    }
+    $connection = connect_db();
+    $query = "UPDATE system_param SET value='$value', updated_date=now() WHERE name='$name'";
+    $result = $connection->query($query);
+    if ($result === TRUE) {
+        $this->logger->info("System param updated successfully. name[$name] value[$value]");
+        return $response->withStatus(200);
+    } else {
+        $this->logger->error("Fail to update system param. name[$name] value[$value]. Error[". json_encode($connection->error)."]");
+        return $response->withStatus(500);
+    }
+});
+
 // public APIs
 
 $app->get("/api/public/verify/purchase", function ($request, $response, $arguments) {
