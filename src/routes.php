@@ -46,7 +46,6 @@ $app->get("/api/get/verify/attempts", function ($request, $response, $arguments)
     $connection = connect_db();
     $query = "SELECT * FROM verify_attempt ORDER BY last_attempt_date DESC";
     $result = $connection->query($query) or die($this->logger->error("Fail to get verify attempt. Error[". json_encode($connection->error)."]"));
-    
     $data = [];
     $i = 0;
     while($row = $result->fetch_assoc()) {
@@ -116,6 +115,102 @@ $app->post("/api/delete/verify/attempts", function ($request, $response, $argume
         $this->logger->error("purchaseCode[$purchaseCode] Fail to delete verify attempts. Error[". json_encode($connection->error)."]");
         return $response->withStatus(500);
     }
+});
+
+// Insert buyer feedback
+$app->post("/api/buyer/feedback", function ($request, $response, $arguments) {
+    $purchaseCode = $request->getParsedBodyParam('purchaseCode', $default = null);
+    $email = $request->getParsedBodyParam('email', $default = null);
+    $phone = $request->getParsedBodyParam('phone', $default = null);
+    $message = $request->getParsedBodyParam('message', $default = null);
+    $this->logger->info("purchaseCode[$purchaseCode] New feedback message[$message]");
+    $connection = connect_db();
+    $result = $connection->query("INSERT INTO buyer_feedback(purchase_code, email, phone, message, status, created_date) 
+                                    VALUES('$purchaseCode', '$email', '$phone', '$message', 0, now())");
+    if ($result === TRUE) {
+        $this->logger->info("purchaseCode[$purchaseCode] Feedback saved successfully!");
+        return $response->withStatus(200);
+    } else {
+        $this->logger->error("purchaseCode[$purchaseCode] Fail to save feedback. Error[". json_encode($connection->error)."]");
+        return $response->withStatus(500);
+    }
+});
+
+// Delete buyer feedback
+$app->post("/api/delete/buyer/feedback", function ($request, $response, $arguments) {
+    $ids = $request->getParsedBodyParam('id', $default = null);
+    $this->logger->info("Delete feedback id[$ids]");
+    $arrayIds = explode(',', $ids);
+    $status = false;
+    $connection = connect_db();
+    foreach ($arrayIds as $id) {
+        $result = $connection->query("DELETE FROM buyer_feedback WHERE id='$id'");
+        if ($result === TRUE) {
+            $this->logger->info("id[$id] Feedback deleted successfully!");
+            $status = true;
+        } else {
+            $this->logger->error("id[$id] Fail to delete feedback. Error[". json_encode($connection->error)."]");
+            $status = false;
+            break;
+        }
+    }
+    if ($status) {
+        return $response->withStatus(200);
+    } else {
+        return $response->withStatus(500);
+    }
+});
+
+// Get buyer feedback
+$app->get("/api/get/buyer/feedback", function ($request, $response, $arguments) {
+    $status = $request->getQueryParam('status', $default = null);
+    if ($status==null) {
+        $this->logger->info("get all buyer feedback");
+        $query = "SELECT * FROM buyer_feedback";
+    } else {
+        $this->logger->info("get buyer feedback with status[$status]");
+        $query = "SELECT * FROM buyer_feedback WHERE status='$status'";
+    }
+    $connection = connect_db();
+    $result = $connection->query($query) or die($this->logger->error("Fail to get buyer feedback. Error[". json_encode($connection->error)."]"));
+    $data = [];
+    $i = 0;
+    while($row = $result->fetch_assoc()) {
+        $data[$i++] = $row;
+    }
+    $payload["count"] = $result->num_rows;
+    $payload["data"] = $data;
+    return $response->withStatus(200)
+        ->withHeader("Content-Type", "application/json")
+        ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+});
+
+// Get buyer feedback page
+$app->get("/api/get/buyer/feedback/page", function ($request, $response, $arguments) {
+    $page = $request->getQueryParam('page', $default = null);
+    $size = $request->getQueryParam('size', $default = null);
+    $status = $request->getQueryParam('status', $default = null);
+    $offset = $page*$size;
+    $limit = $size;
+    if ($status==null) {
+        $this->logger->info("get all buyer feedback - page[$page], size[$size]");
+        $query = "SELECT * FROM buyer_feedback LIMIT $offset,$limit";
+    } else {
+        $this->logger->info("get buyer feedback with status[$status] - page[$page], size[$size]");
+        $query = "SELECT * FROM buyer_feedback WHERE status='$status' LIMIT $offset,$limit";
+    }
+    $connection = connect_db();
+    $result = $connection->query($query) or die($this->logger->error("Fail to get buyer feedback. Error[". json_encode($connection->error)."]"));
+    $data = [];
+    $i = 0;
+    while($row = $result->fetch_assoc()) {
+        $data[$i++] = $row;
+    }
+    $payload["count"] = $result->num_rows;
+    $payload["data"] = $data;
+    return $response->withStatus(200)
+        ->withHeader("Content-Type", "application/json")
+        ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
 });
 
 // public APIs
