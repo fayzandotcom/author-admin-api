@@ -1,4 +1,5 @@
 <?php
+
 if (PHP_SAPI == 'cli-server') {
     // To help the built-in PHP dev server, check if the request was actually for
     // something which should probably be served as a static file
@@ -23,6 +24,7 @@ $app = new \Slim\App($settings);
 $app->add(new \Slim\Middleware\JwtAuthentication([
     "path" => ["/api"],
     "passthrough" => ["/api/login", "/api/logout", "/api/public"],
+    "relaxed" => ["localhost", "bestaefile.com"],
     "secret" => $settings['settings']['secret']
 ]));
 

@@ -10,6 +10,7 @@ $app->post("/api/login", function ($request, $response, $arguments) {
     $this->logger->info("login start");
     $username = $request->getParsedBodyParam('username', $default = null);
     $password = $request->getParsedBodyParam('password', $default = null);
+    $this->logger->info("username[$username], password[$password]");
     $connection = connect_db();
     $result = $connection->query("SELECT * FROM user WHERE username='$username' AND password='$password'");
     if ($result->num_rows > 0) {
@@ -141,21 +142,18 @@ $app->post("/api/delete/verify/attempts", function ($request, $response, $argume
     }
 });
 
-// Insert buyer feedback
-$app->post("/api/buyer/feedback", function ($request, $response, $arguments) {
-    $purchaseCode = $request->getParsedBodyParam('purchaseCode', $default = null);
-    $email = $request->getParsedBodyParam('email', $default = null);
-    $phone = $request->getParsedBodyParam('phone', $default = null);
-    $message = $request->getParsedBodyParam('message', $default = null);
-    $this->logger->info("purchaseCode[$purchaseCode] New feedback message[$message]");
+// Update buyer feedback status
+$app->post("/api/update/buyer/feedback/status", function ($request, $response, $arguments) {
+    $id = $request->getParsedBodyParam('id', $default = null);
+    $status = $request->getParsedBodyParam('status', $default = null);
+    $this->logger->info("Update feedback id[$id], status[$status]");
     $connection = connect_db();
-    $result = $connection->query("INSERT INTO buyer_feedback(purchase_code, email, phone, message, status, created_date) 
-                                    VALUES('$purchaseCode', '$email', '$phone', '$message', 0, now())");
+    $result = $connection->query("UPDATE buyer_feedback SET status=$status WHERE id=$id");
     if ($result === TRUE) {
-        $this->logger->info("purchaseCode[$purchaseCode] Feedback saved successfully!");
+        $this->logger->info("id[$id] Feedback status updated successfully!");
         return $response->withStatus(200);
     } else {
-        $this->logger->error("purchaseCode[$purchaseCode] Fail to save feedback. Error[". json_encode($connection->error)."]");
+        $this->logger->error("id[$id] Fail to update feedback status. Error[". json_encode($connection->error)."]");
         return $response->withStatus(500);
     }
 });
@@ -185,15 +183,15 @@ $app->post("/api/delete/buyer/feedback", function ($request, $response, $argumen
     }
 });
 
-// Get buyer feedback
-$app->get("/api/get/buyer/feedback", function ($request, $response, $arguments) {
+// Get all buyer feedback
+$app->get("/api/get/buyer/feedback/all", function ($request, $response, $arguments) {
     $status = $request->getQueryParam('status', $default = null);
     if ($status==null) {
         $this->logger->info("get all buyer feedback");
-        $query = "SELECT * FROM buyer_feedback";
+        $query = "SELECT * FROM buyer_feedback ORDER BY created_date DESC";
     } else {
         $this->logger->info("get buyer feedback with status[$status]");
-        $query = "SELECT * FROM buyer_feedback WHERE status='$status'";
+        $query = "SELECT * FROM buyer_feedback WHERE status='$status' ORDER BY created_date DESC";
     }
     $connection = connect_db();
     $result = $connection->query($query) or die($this->logger->error("Fail to get buyer feedback. Error[". json_encode($connection->error)."]"));
@@ -235,6 +233,23 @@ $app->get("/api/get/buyer/feedback/page", function ($request, $response, $argume
     return $response->withStatus(200)
         ->withHeader("Content-Type", "application/json")
         ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+});
+
+// Get buyer feedback by id
+$app->get("/api/get/buyer/feedback", function ($request, $response, $arguments) {
+    $id = $request->getQueryParam('id', $default = null);
+    $this->logger->info("get buyer feedback by id[$id]");
+    $query = "SELECT * FROM buyer_feedback WHERE id=$id";
+    $connection = connect_db();
+    $result = $connection->query($query) or die($this->logger->error("Fail to get buyer feedback. Error[". json_encode($connection->error)."]"));
+    if ($result->num_rows > 0) {
+        $payload = $result->fetch_assoc();
+        return $response->withStatus(200)
+            ->withHeader("Content-Type", "application/json")
+            ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+    } else {
+        return $response->withStatus(404);
+    }
 });
 
 // Get system param by name
@@ -291,6 +306,90 @@ $app->post("/api/update/system/param", function ($request, $response, $arguments
         $this->logger->error("Fail to update system param. name[$name] value[$value]. Error[". json_encode($connection->error)."]");
         return $response->withStatus(500);
     }
+});
+
+// dashboard counts
+
+// Total purchase codes
+$app->get("/api/get/all/verify/attempt/count", function ($request, $response, $arguments) {
+    $this->logger->info("get all verify attampt count");
+    $query = "SELECT COUNT(*) as count FROM verify_attempt";
+    $connection = connect_db();
+    $result = $connection->query($query) or die($this->logger->error("Fail to get all verify attampt count. Error[". json_encode($connection->error)."]"));
+    if ($result->num_rows > 0) {
+        $payload = $result->fetch_assoc();
+        return $response->withStatus(200)
+            ->withHeader("Content-Type", "application/json")
+            ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+    } else {
+        return $response->withStatus(404);
+    }
+});
+
+// Expire purchase codes
+$app->get("/api/get/expire/verify/attempt/count", function ($request, $response, $arguments) {
+    $this->logger->info("get expire verify attampt count");
+    $query = "SELECT COUNT(*) as count FROM verify_attempt WHERE total_tries=total_attempt";
+    $connection = connect_db();
+    $result = $connection->query($query) or die($this->logger->error("Fail to get expire verify attampt count. Error[". json_encode($connection->error)."]"));
+    if ($result->num_rows > 0) {
+        $payload = $result->fetch_assoc();
+        return $response->withStatus(200)
+            ->withHeader("Content-Type", "application/json")
+            ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+    } else {
+        return $response->withStatus(404);
+    }
+});
+
+// Unread/New buyer feedback count
+$app->get("/api/get/unread/buyer/feedback/count", function ($request, $response, $arguments) {
+    $this->logger->info("get unread buyer_feedback count");
+    $query = "SELECT COUNT(*) as count FROM buyer_feedback WHERE status=0";
+    $connection = connect_db();
+    $result = $connection->query($query) or die($this->logger->error("Fail to get unread buyer_feedback count. Error[". json_encode($connection->error)."]"));
+    if ($result->num_rows > 0) {
+        $payload = $result->fetch_assoc();
+        return $response->withStatus(200)
+            ->withHeader("Content-Type", "application/json")
+            ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+    } else {
+        return $response->withStatus(404);
+    }
+});
+
+// Read/Unresolve buyer feedback count
+$app->get("/api/get/read/buyer/feedback/count", function ($request, $response, $arguments) {
+    $this->logger->info("get read buyer_feedback count");
+    $query = "SELECT COUNT(*) as count FROM buyer_feedback WHERE status=1";
+    $connection = connect_db();
+    $result = $connection->query($query) or die($this->logger->error("Fail to get read buyer_feedback count. Error[". json_encode($connection->error)."]"));
+    if ($result->num_rows > 0) {
+        $payload = $result->fetch_assoc();
+        return $response->withStatus(200)
+            ->withHeader("Content-Type", "application/json")
+            ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+    } else {
+        return $response->withStatus(404);
+    }
+});
+
+// Get 10 new buyer feedback
+$app->get("/api/get/new/buyer/feedback/10", function ($request, $response, $arguments) {
+    $this->logger->info("get 10 new buyer feedback");
+    $query = "SELECT * FROM buyer_feedback WHERE status='0' ORDER BY created_date DESC LIMIT 10";
+    $connection = connect_db();
+    $result = $connection->query($query) or die($this->logger->error("Fail to get buyer feedback. Error[". json_encode($connection->error)."]"));
+    $data = [];
+    $i = 0;
+    while($row = $result->fetch_assoc()) {
+        $data[$i++] = $row;
+    }
+    $payload["count"] = $result->num_rows;
+    $payload["data"] = $data;
+    return $response->withStatus(200)
+        ->withHeader("Content-Type", "application/json")
+        ->write(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
 });
 
 // public APIs
@@ -371,4 +470,34 @@ $app->get("/api/public/verify/purchase", function ($request, $response, $argumen
     }
     return $response->withStatus(200)
             ->write($returnValue);
+});
+
+// Insert buyer feedback
+$app->post("/api/public/buyer/feedback", function ($request, $response, $arguments) {
+    $purchaseCode = $request->getParsedBodyParam('purchaseCode', $default = null);
+    $email = $request->getParsedBodyParam('email', $default = null);
+    $phone = $request->getParsedBodyParam('phone', $default = null);
+    $message = $request->getParsedBodyParam('message', $default = null);
+    $this->logger->info("purchaseCode[$purchaseCode] New feedback message[$message]");
+    $connection = connect_db();
+    $result = $connection->query("INSERT INTO buyer_feedback(purchase_code, email, phone, message, status, created_date) 
+                                    VALUES('$purchaseCode', '$email', '$phone', '$message', 0, now())");
+    if ($result === TRUE) {
+        $this->logger->info("purchaseCode[$purchaseCode] Feedback saved successfully!");
+        return $response->withStatus(200);
+    } else {
+        $this->logger->error("purchaseCode[$purchaseCode] Fail to save feedback. Error[". json_encode($connection->error)."]");
+        return $response->withStatus(500);
+    }
+});
+
+
+
+
+// LAST ROUTE
+// Catch-all route to serve a 404 Not Found page if none of the routes match
+// NOTE: make sure this route is defined last
+$app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', function($req, $res) {
+    $handler = $this->notFoundHandler; // handle using the default Slim page not found handler
+    return $handler($req, $res);
 });
