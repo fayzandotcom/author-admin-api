@@ -7,12 +7,11 @@ use Tuupola\Base62;
 
 // Login
 $app->post("/api/login", function ($request, $response, $arguments) {
-    $this->logger->info("login start");
     $username = $request->getParsedBodyParam('username', $default = null);
     $password = $request->getParsedBodyParam('password', $default = null);
-    $this->logger->info("username[$username], password[$password]");
+    $this->logger->info("username[$username] login start");
     $connection = connect_db();
-    $result = $connection->query("SELECT * FROM user WHERE username='$username' AND password='$password'");
+    $result = $connection->query("SELECT * FROM user WHERE username='$username' AND password='$password'") or die($this->logger->error("Fail to login. Error[". json_encode($connection->error)."]"));
     if ($result->num_rows > 0) {
         while($row = $result->fetch_assoc()) {
             $this->logger->info("[$username] login success");

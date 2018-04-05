@@ -33,7 +33,7 @@ function connect_db() {
 	$username = 'root';
 	$password = 'root';
 	$name = 'author-admin-db';
-	$connection = new mysqli($host, $username, $password, $name);
+	$connection = new mysqli($host, $username, $password, $name) or die($this->logger->error("Connection error!"));
 	return $connection;
 }
 

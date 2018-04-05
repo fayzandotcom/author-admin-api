@@ -1,14 +1,14 @@
 {
-    "name": "slim/slim-skeleton",
-    "description": "A Slim Framework skeleton application for rapid development",
-    "keywords": ["microframework", "rest", "router", "psr7"],
-    "homepage": "http://github.com/slimphp/Slim-Skeleton",
-    "license": "MIT",
+    "name": "author-admin-api",
+    "description": "Web Service to verify purchase code from Envato and protect purchase code verification by tracking the number of requests made for each purchase code.",
+    "keywords": ["microframework", "rest", "router", "psr7", "envato"],
+    "homepage": "https://github.com/fayzandotcom/author-admin-api",
+    "license": "GPLv2",
     "authors": [
         {
-            "name": "Josh Lockhart",
-            "email": "info@joshlockhart.com",
-            "homepage": "http://www.joshlockhart.com/"
+            "name": "Muhammad Fayzan Siddiqui",
+            "email": "fayzandotcom@hotmail.com",
+            "homepage": "https://www.linkedin.com/in/fayzansiddiqui/"
         }
     ],
     "require": {
