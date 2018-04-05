@@ -1,27 +1,37 @@
-# Slim Framework 3 Skeleton Application
+# Author Admin API
 
-Use this skeleton application to quickly setup and start working on a new Slim Framework 3 application. This application uses the latest Slim 3 with the PHP-View template renderer. It also uses the Monolog logger.
+Web Service to verify purchase code from Envato (https://envato.com). Also protect purchase code verification by tracking the number of requests made for each purchase code.
 
-This skeleton application was built for Composer. This makes setting up a new Slim Framework application quick and easy.
+Database script of this web service can be found here https://github.com/fayzandotcom/author-admin-db
+APIs in this projects are consumed by an angular web UI (https://github.com/fayzandotcom/author-admin-web)
 
-## Install the Application
+## Platform/Framework
 
-Run this command from the directory in which you want to install your new Slim Framework application.
+1. PHP 5.6
+2. Slim Framework v3.1 (www.slimframework.com)
+3. MySQL
 
-    php composer.phar create-project slim/slim-skeleton [my-app-name]
+## Installation
 
-Replace `[my-app-name]` with the desired directory name for your new application. You'll want to:
+1. Run the SQL script migrations in MySQL database from https://github.com/fayzandotcom/author-admin-db
+2. Install composer and resolve dependencies using composer. `composer install`
+3. Deploy admin-author-api to web server (i.e. apache) with php 5.6
+4. Edit connect_db() method in "index.php" under public folder. Provide database name, username and password.
 
-* Point your virtual host document root to your new application's `public/` directory.
-* Ensure `logs/` is web writeable.
+## Contributing
 
-To run the application in development, you can run these commands 
+1. Fork it!
+2. Create your feature branch: `git checkout -b my-new-feature`
+3. Commit your changes: `git commit -am 'Add some feature'`
+4. Push to the branch: `git push origin my-new-feature`
+5. Submit a pull request :D
 
-	cd [my-app-name]
-	php composer.phar start
+## History
 
-Run this command in the application directory to run the test suite
+Version: 1.0
+* Initial release.
 
-	php composer.phar test
+## License
 
-That's it! Now go build something cool.
+GPLv2
+http://www.gnu.org/licenses/gpl-2.0.html
