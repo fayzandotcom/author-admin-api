@@ -2,7 +2,7 @@
 
 Web Service to verify purchase code from Envato (https://envato.com). Also protect purchase code verification by tracking the number of requests made for each purchase code.
 
-Database script of this web service can be found here https://github.com/fayzandotcom/author-admin-db
+Database script of this web service can be find here https://github.com/fayzandotcom/author-admin-db
 APIs in this projects are consumed by an angular web UI (https://github.com/fayzandotcom/author-admin-web)
 
 ## Platform/Framework
